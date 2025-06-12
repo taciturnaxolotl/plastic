@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>C:\PLASTIC.EXE - Self-Modifying System</title>
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap");
+
+            body {
+                background: #f0f0f0;
+                font-family: "Courier Prime", "Courier New", monospace;
+                color: #000000;
+                margin: 0;
+                padding: 20px;
+                line-height: 1.2;
+                font-size: 14px;
+            }
+
+            .terminal {
+                background: #ffffff;
+                border: 2px solid #808080;
+                box-shadow:
+                    inset -2px -2px #c0c0c0,
+                    inset 2px 2px #404040;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 0;
+            }
+
+            .title-bar {
+                background: #c0c0c0;
+                color: #000000;
+                padding: 4px 8px;
+                font-weight: bold;
+                border-bottom: 1px solid #808080;
+                font-size: 12px;
+            }
+
+            .content {
+                padding: 10px;
+                background: #ffffff;
+            }
+
+            .prompt {
+                color: #000000;
+                margin: 0;
+            }
+
+            .cursor {
+                background: #000000;
+                color: #ffffff;
+                animation: blink 1s infinite;
+            }
+
+            @keyframes blink {
+                0%,
+                50% {
+                    opacity: 1;
+                }
+                51%,
+                100% {
+                    opacity: 0;
+                }
+            }
+
+            h1 {
+                color: #000000;
+                font-size: 24px;
+                margin: 10px 0;
+                text-transform: uppercase;
+            }
+
+            h2 {
+                color: #000000;
+                font-size: 16px;
+                margin: 15px 0 5px 0;
+                text-transform: uppercase;
+            }
+
+            .command {
+                color: #ffffff;
+                background: #808080;
+                padding: 2px 4px;
+                display: inline-block;
+                margin: 2px;
+            }
+
+            .button {
+                background: #c0c0c0;
+                color: #000000;
+                border: 2px outset #c0c0c0;
+                padding: 4px 8px;
+                font-family: inherit;
+                font-size: 12px;
+                cursor: pointer;
+                margin: 5px 2px;
+                display: inline-block;
+                text-decoration: none;
+                text-transform: uppercase;
+            }
+
+            .button:active {
+                border: 2px inset #c0c0c0;
+            }
+
+            .button:hover {
+                background: #d0d0d0;
+            }
+
+            .editor {
+                width: calc(100% - 20px);
+                height: 150px;
+                background: #0000ff;
+                color: #ffffff;
+                font-family: inherit;
+                margin: 10px 0;
+                padding: 10px;
+                border: 2px inset #c0c0c0;
+                font-size: 12px;
+                resize: none;
+            }
+
+            .status-bar {
+                background: #c0c0c0;
+                color: #000000;
+                padding: 2px 8px;
+                border-top: 1px solid #808080;
+                font-size: 11px;
+                display: flex;
+                justify-content: space-between;
+            }
+
+            .file-listing {
+                margin: 10px 0;
+            }
+
+            .file-line {
+                margin: 2px 0;
+                font-family: inherit;
+            }
+
+            .dir {
+                color: #000080;
+            }
+
+            .exe {
+                color: #000000;
+            }
+
+            .txt {
+                color: #000000;
+            }
+
+            .error {
+                color: #ffffff;
+                background: #ff0000;
+                padding: 2px 4px;
+            }
+
+            ul {
+                margin: 5px 0;
+                padding-left: 20px;
+            }
+
+            li {
+                margin: 2px 0;
+            }
+
+            .separator {
+                color: #808080;
+                margin: 10px 0;
+            }
+
+            .ascii-art {
+                color: #000000;
+                font-size: 10px;
+                line-height: 1;
+                white-space: pre;
+                margin: 10px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="terminal">
+            <div class="title-bar">
+                C:\PLASTIC.EXE - [Self-Modifying System v2.1]
+            </div>
+
+            <div class="content">
+                <p class="prompt">C:\PLASTIC> DIR</p>
+
+                <div class="file-listing">
+                    <div class="file-line">
+                        Volume in drive C is PLASTIC-SYS
+                    </div>
+                    <div class="file-line">Directory of C:\PLASTIC</div>
+                    <div class="file-line"></div>
+                    <div class="file-line">
+                        <span class="dir">SYSTEM &lt;DIR&gt;</span> 12-15-95
+                        3:42p
+                    </div>
+                    <div class="file-line">
+                        <span class="exe">PLASTIC EXE</span> 24,576 12-15-95
+                        3:42p
+                    </div>
+                    <div class="file-line">
+                        <span class="txt">README TXT</span> 1,024 12-15-95 3:42p
+                    </div>
+                    <div class="file-line">
+                        <span class="txt">CONFIG SYS</span> 512 12-15-95 3:42p
+                    </div>
+                    <div class="file-line">4 File(s) 26,112 bytes</div>
+                    <div class="file-line">524,288 bytes free</div>
+                </div>
+
+                <p class="prompt">C:\PLASTIC> PLASTIC.EXE</p>
+
+                <pre class="ascii-art">
+██████╗ ██╗      █████╗ ███████╗████████╗██╗ ██████╗
+██╔══██╗██║     ██╔══██╗██╔════╝╚══██╔══╝██║██╔════╝
+██████╔╝██║     ███████║███████╗   ██║   ██║██║
+██╔═══╝ ██║     ██╔══██║╚════██║   ██║   ██║██║
+██║     ███████╗██║  ██║███████║   ██║   ██║╚██████╗
+╚═╝     ╚══════╝╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝ ╚═════╝</pre
+                >
+
+                <h2>System Information:</h2>
+                <p>PLASTIC v2.1 - Self-Modifying Code System</p>
+                <p>Copyright (C) 1995 DUNKIRK Corp.</p>
+                <p>
+                    All rights reserved. Licensed to: REGISTERED USER under MIT
+                </p>
+
+                <div class="separator">
+                    ════════════════════════════════════════════════════════════
+                </div>
+
+                <h2>About This System:</h2>
+                <p>
+                    PLASTIC.EXE is an experimental self-modifying executable
+                    that allows real-time code injection and system
+                    modification. WARNING: Use at your own risk. System may
+                    become unstable.
+                </p>
+
+                <h2>Experimental Code Generator:</h2>
+                <p>Describe changes to make to the page:</p>
+                <textarea
+                    class="editor"
+                    id="codeEditor"
+                    placeholder="e.g., 'Add a retro calculator widget', 'Change theme to green terminal', or 'Completely redesign as a DOS file manager'"
+                ></textarea>
+                <div class="button" onclick="generateAndExecute()">
+                    GENERATE & EXECUTE
+                </div>
+                <div class="button" onclick="clearEditor()">CLEAR</div>
+                <div
+                    id="statusDisplay"
+                    style="color: #000080; margin-top: 10px"
+                ></div>
+
+                <h2>System Features:</h2>
+                <ul>
+                    <li>
+                        Real-time <span class="command">EXEC</span> code
+                        modification
+                    </li>
+                    <li>Compatible with DOS 6.22 and Windows 95</li>
+                    <li>640K memory optimized</li>
+                    <li>No TSR conflicts detected</li>
+                    <li>Supports EGA/VGA graphics modes</li>
+                </ul>
+
+                <h2>System Commands:</h2>
+                <p>
+                    <span class="command">HELP</span>
+                    <span class="command">DIR</span>
+                    <span class="command">EDIT</span>
+                    <span class="command">RUN</span>
+                    <span class="command">EXIT</span>
+                </p>
+
+                <div class="separator">
+                    ════════════════════════════════════════════════════════════
+                </div>
+
+                <p>Runtime: 00:13:37 | Memory: 589K free | CPU: 80486DX-33</p>
+                <p class="error">
+                    WARNING: Unauthorized modification may corrupt system files
+                </p>
+
+                <p class="prompt">C:\PLASTIC> <span class="cursor">_</span></p>
+            </div>
+
+            <div class="status-bar">
+                <span>F1=Help F2=Save F3=Load F10=Menu</span>
+                <span>12:34 PM</span>
+            </div>
+        </div>
+
+        <script>
+            async function generateAndExecute() {
+                const userPrompt = document.getElementById("codeEditor").value;
+                const statusDiv = document.getElementById("statusDisplay");
+
+                if (userPrompt.trim() === "") {
+                    statusDiv.textContent = "ERROR: No description provided";
+                    return;
+                }
+
+                statusDiv.textContent = "CONNECTING TO AI SYSTEM...";
+
+                try {
+                    const currentPageHTML = document.documentElement.outerHTML;
+
+                    const response = await fetch(
+                        "https://ai.hackclub.com/chat/completions",
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                                messages: [
+                                    {
+                                        role: "user",
+                                        content: `Here is the current HTML page:\n\n${currentPageHTML}\n\nUser request: "${userPrompt}"\n\nGenerate HTML code that fits the DOS/retro terminal aesthetic for this request. Use flat colors like #00ff41 (green), #ffff00 (yellow), #00ffff (cyan), #ffffff (white), #c0c0c0 (gray), #000080 (blue), and #ff0000 (red). Use monospace fonts and simple borders. Make it look like it belongs in a 1990s DOS program. Only return the HTML code to add, no explanations.`,
+                                    },
+                                ],
+                            }),
+                        },
+                    );
+
+                    if (!response.ok) {
+                        throw new Error(
+                            `HTTP ${response.status}: ${response.statusText}`,
+                        );
+                    }
+
+                    statusDiv.textContent = "AI PROCESSING...";
+
+                    const data = await response.json();
+                    console.log("API Response:", data); // Debug log
+
+                    let generatedCode;
+                    if (
+                        data.choices &&
+                        data.choices[0] &&
+                        data.choices[0].message
+                    ) {
+                        generatedCode = data.choices[0].message.content;
+                    } else if (data.content) {
+                        generatedCode = data.content;
+                    } else if (data.response) {
+                        generatedCode = data.response;
+                    } else if (typeof data === "string") {
+                        generatedCode = data;
+                    } else {
+                        throw new Error("Unexpected API response format");
+                    }
+
+                    // Clean up the code (remove markdown formatting if present)
+                    let cleanCode = generatedCode
+                        .replace(/```html\n?/g, "")
+                        .replace(/```\n?/g, "");
+
+                    statusDiv.textContent = "INJECTING CODE...";
+
+                    // Insert the generated code
+                    document.querySelector(".content").innerHTML += cleanCode;
+                    document.getElementById("codeEditor").value = "";
+
+                    statusDiv.textContent = "CODE EXECUTION SUCCESSFUL";
+
+                    // Clear status after 3 seconds
+                    setTimeout(() => {
+                        statusDiv.textContent = "";
+                    }, 3000);
+                } catch (error) {
+                    statusDiv.textContent = `SYSTEM ERROR: ${error.message}`;
+                    console.error("Error:", error);
+                }
+            }
+
+            function clearEditor() {
+                document.getElementById("codeEditor").value = "";
+                document.getElementById("statusDisplay").textContent = "";
+            }
+
+            // Handle Ctrl+Enter in textarea
+            document.addEventListener("DOMContentLoaded", function () {
+                document
+                    .getElementById("codeEditor")
+                    .addEventListener("keydown", function (e) {
+                        if (e.ctrlKey && e.key === "Enter") {
+                            e.preventDefault();
+                            generateAndExecute();
+                        }
+                    });
+            });
+
+            // Update time in status bar
+            setInterval(() => {
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                });
+                const statusBarTime = document.querySelector(
+                    ".status-bar span:last-child",
+                );
+                if (statusBarTime) {
+                    statusBarTime.textContent = timeStr;
+                }
+            }, 1000);
+        </script>
+    </body>
+</html>
