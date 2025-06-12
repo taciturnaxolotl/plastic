@@ -300,6 +300,80 @@
         </div>
 
         <script>
+            // Tool call system for AI to interact with the page
+            window.toolCallbacks = {
+                replaceElement: function(selector, newHTML) {
+                    const element = document.querySelector(selector);
+                    if (element) {
+                        element.outerHTML = newHTML;
+                        return { success: true, message: `Replaced element: ${selector}` };
+                    }
+                    return { success: false, message: `Element not found: ${selector}` };
+                },
+                
+                updateElement: function(selector, newContent) {
+                    const element = document.querySelector(selector);
+                    if (element) {
+                        element.innerHTML = newContent;
+                        return { success: true, message: `Updated element: ${selector}` };
+                    }
+                    return { success: false, message: `Element not found: ${selector}` };
+                },
+                
+                addElement: function(parentSelector, newHTML, position = 'beforeend') {
+                    const parent = document.querySelector(parentSelector);
+                    if (parent) {
+                        parent.insertAdjacentHTML(position, newHTML);
+                        return { success: true, message: `Added element to: ${parentSelector}` };
+                    }
+                    return { success: false, message: `Parent not found: ${parentSelector}` };
+                },
+                
+                removeElement: function(selector) {
+                    const element = document.querySelector(selector);
+                    if (element) {
+                        element.remove();
+                        return { success: true, message: `Removed element: ${selector}` };
+                    }
+                    return { success: false, message: `Element not found: ${selector}` };
+                },
+                
+                updateStyle: function(selector, styleObj) {
+                    const element = document.querySelector(selector);
+                    if (element) {
+                        Object.assign(element.style, styleObj);
+                        return { success: true, message: `Updated styles for: ${selector}` };
+                    }
+                    return { success: false, message: `Element not found: ${selector}` };
+                },
+                
+                executeJS: function(code) {
+                    try {
+                        const result = eval(code);
+                        return { success: true, message: 'JavaScript executed', result: result };
+                    } catch (error) {
+                        return { success: false, message: `JS Error: ${error.message}` };
+                    }
+                }
+            };
+
+            function executeToolCall(toolCall) {
+                const { function: func, arguments: args } = toolCall;
+                console.log('Executing tool call:', func, args);
+                
+                if (window.toolCallbacks[func]) {
+                    // Handle parameter name variations
+                    if (func === 'updateStyle' && args.styleObj) {
+                        // Convert styleObj to the expected parameter name
+                        return window.toolCallbacks[func](args.selector, args.styleObj);
+                    } else {
+                        // Use all argument values in order
+                        return window.toolCallbacks[func](...Object.values(args));
+                    }
+                }
+                return { success: false, message: `Unknown tool: ${func}` };
+            }
+
             async function generateAndExecute() {
                 const userPrompt = document.getElementById("codeEditor").value;
                 const statusDiv = document.getElementById("statusDisplay");
@@ -325,7 +399,7 @@
                                 messages: [
                                     {
                                         role: "user",
-                                        content: `Here is the current HTML page:\n\n${currentPageHTML}\n\nUser request: "${userPrompt}"\n\nGenerate HTML code that fits the DOS/retro terminal aesthetic for this request. Use flat colors like #00ff41 (green), #ffff00 (yellow), #00ffff (cyan), #ffffff (white), #c0c0c0 (gray), #000080 (blue), and #ff0000 (red). Use monospace fonts and simple borders. Make it look like it belongs in a 1990s DOS program. Only return the HTML code to add, no explanations.`,
+                                        content: `Here is the current HTML page:\n\n${currentPageHTML}\n\nUser request: "${userPrompt}"\n\nIMPORTANT: You must respond with ONLY one of these two formats:\n\nFORMAT 1 - Tool calls (for precise modifications):\n{"tool_calls": [{"function": "functionName", "arguments": {"param": "value"}}]}\n\nFORMAT 2 - Raw HTML (to append to page):\n<div>Your HTML content here</div>\n\nDO NOT include any explanatory text, markdown formatting, or additional commentary. Respond with ONLY the JSON or HTML.\n\nAvailable tools:\n1. replaceElement(selector, newHTML) - Replace an element\n2. updateElement(selector, newContent) - Update element content  \n3. addElement(parentSelector, newHTML, position) - Add element\n4. removeElement(selector) - Remove an element\n5. updateStyle(selector, styleObj) - Update CSS styles\n6. executeJS(code) - Run JavaScript code\n\nUse DOS/retro aesthetic with flat colors: #000000 (black), #ffffff (white), #c0c0c0 (gray), #000080 (blue), #ff0000 (red). Use monospace fonts.`,
                                     },
                                 ],
                             }),
@@ -341,37 +415,74 @@
                     statusDiv.textContent = "AI PROCESSING...";
 
                     const data = await response.json();
-                    console.log("API Response:", data); // Debug log
+                    console.log("API Response:", data);
 
-                    let generatedCode;
+                    let generatedContent;
                     if (
                         data.choices &&
                         data.choices[0] &&
                         data.choices[0].message
                     ) {
-                        generatedCode = data.choices[0].message.content;
+                        generatedContent = data.choices[0].message.content;
                     } else if (data.content) {
-                        generatedCode = data.content;
+                        generatedContent = data.content;
                     } else if (data.response) {
-                        generatedCode = data.response;
+                        generatedContent = data.response;
                     } else if (typeof data === "string") {
-                        generatedCode = data;
+                        generatedContent = data;
                     } else {
                         throw new Error("Unexpected API response format");
                     }
 
-                    // Clean up the code (remove markdown formatting if present)
-                    let cleanCode = generatedCode
-                        .replace(/```html\n?/g, "")
+                    statusDiv.textContent = "EXECUTING COMMANDS...";
+
+                    // Clean up response and extract JSON if present
+                    let cleanResponse = generatedContent.trim();
+                    
+                    // Remove markdown formatting
+                    cleanResponse = cleanResponse
+                        .replace(/```json\n?/g, "")
                         .replace(/```\n?/g, "");
 
-                    statusDiv.textContent = "INJECTING CODE...";
+                    // Try to extract JSON from mixed content
+                    const jsonMatch = cleanResponse.match(/\{[\s\S]*"tool_calls"[\s\S]*\}/);
+                    if (jsonMatch) {
+                        cleanResponse = jsonMatch[0];
+                    }
 
-                    // Insert the generated code
-                    document.querySelector(".content").innerHTML += cleanCode;
+                    console.log('Cleaned response:', cleanResponse);
+
+                    // Check if response contains tool calls
+                    try {
+                        const toolResponse = JSON.parse(cleanResponse);
+                        if (toolResponse.tool_calls && Array.isArray(toolResponse.tool_calls)) {
+                            // Execute tool calls
+                            const results = [];
+                            for (const toolCall of toolResponse.tool_calls) {
+                                const result = executeToolCall(toolCall);
+                                results.push(result);
+                                console.log('Tool call result:', result);
+                            }
+                            statusDiv.textContent = `EXECUTED ${results.length} COMMANDS`;
+                        } else {
+                            throw new Error("Invalid tool call format");
+                        }
+                    } catch (jsonError) {
+                        console.log('JSON parse error:', jsonError);
+                        console.log('Raw response:', generatedContent);
+                        console.log('Attempting to parse as HTML...');
+                        
+                        // Not JSON, treat as HTML code
+                        let cleanCode = generatedContent
+                            .replace(/```html\n?/g, "")
+                            .replace(/```\n?/g, "");
+
+                        statusDiv.textContent = "INJECTING CODE...";
+                        document.querySelector(".content").innerHTML += cleanCode;
+                        statusDiv.textContent = "CODE EXECUTION SUCCESSFUL";
+                    }
+
                     document.getElementById("codeEditor").value = "";
-
-                    statusDiv.textContent = "CODE EXECUTION SUCCESSFUL";
 
                     // Clear status after 3 seconds
                     setTimeout(() => {
