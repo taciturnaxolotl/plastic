@@ -362,13 +362,28 @@
                 console.log('Executing tool call:', func, args);
                 
                 if (window.toolCallbacks[func]) {
-                    // Handle parameter name variations
-                    if (func === 'updateStyle' && args.styleObj) {
-                        // Convert styleObj to the expected parameter name
-                        return window.toolCallbacks[func](args.selector, args.styleObj);
-                    } else {
-                        // Use all argument values in order
-                        return window.toolCallbacks[func](...Object.values(args));
+                    try {
+                        // Handle different function signatures
+                        if (func === 'removeElement') {
+                            // removeElement expects just a selector
+                            const selector = args.selector || Object.keys(args)[0] || Object.values(args)[0];
+                            return window.toolCallbacks[func](selector);
+                        } else if (func === 'updateStyle' && args.styleObj) {
+                            return window.toolCallbacks[func](args.selector, args.styleObj);
+                        } else if (func === 'executeJS') {
+                            return window.toolCallbacks[func](args.code);
+                        } else if (func === 'updateElement') {
+                            return window.toolCallbacks[func](args.selector, args.newContent);
+                        } else if (func === 'replaceElement') {
+                            return window.toolCallbacks[func](args.selector, args.newHTML);
+                        } else if (func === 'addElement') {
+                            return window.toolCallbacks[func](args.parentSelector, args.newHTML, args.position);
+                        } else {
+                            // Fallback: use all argument values in order
+                            return window.toolCallbacks[func](...Object.values(args));
+                        }
+                    } catch (error) {
+                        return { success: false, message: `Error executing ${func}: ${error.message}` };
                     }
                 }
                 return { success: false, message: `Unknown tool: ${func}` };
@@ -399,7 +414,7 @@
                                 messages: [
                                     {
                                         role: "user",
-                                        content: `Here is the current HTML page:\n\n${currentPageHTML}\n\nUser request: "${userPrompt}"\n\nIMPORTANT: You must respond with ONLY one of these two formats:\n\nFORMAT 1 - Tool calls (for precise modifications):\n{"tool_calls": [{"function": "functionName", "arguments": {"param": "value"}}]}\n\nFORMAT 2 - Raw HTML (to append to page):\n<div>Your HTML content here</div>\n\nDO NOT include any explanatory text, markdown formatting, or additional commentary. Respond with ONLY the JSON or HTML.\n\nAvailable tools:\n1. replaceElement(selector, newHTML) - Replace an element\n2. updateElement(selector, newContent) - Update element content  \n3. addElement(parentSelector, newHTML, position) - Add element\n4. removeElement(selector) - Remove an element\n5. updateStyle(selector, styleObj) - Update CSS styles\n6. executeJS(code) - Run JavaScript code\n\nUse DOS/retro aesthetic with flat colors: #000000 (black), #ffffff (white), #c0c0c0 (gray), #000080 (blue), #ff0000 (red). Use monospace fonts.`,
+                                        content: `Here is the current HTML page:\n\n${currentPageHTML}\n\nUser request: "${userPrompt}"\n\nIMPORTANT: You must respond with ONLY one of these two formats:\n\nFORMAT 1 - Tool calls (for precise modifications):\n{"tool_calls": [{"function": "functionName", "arguments": {"param": "value"}}]}\n\nFORMAT 2 - Raw HTML (to append to page):\n<div>Your HTML content here</div>\n\nDO NOT include any explanatory text, markdown formatting, or additional commentary. Respond with ONLY the JSON or HTML.\n\nAvailable tools with correct argument formats:\n1. removeElement: {"function": "removeElement", "arguments": {"selector": ".class-name"}}\n2. updateElement: {"function": "updateElement", "arguments": {"selector": ".class-name", "newContent": "new content"}}\n3. replaceElement: {"function": "replaceElement", "arguments": {"selector": ".class-name", "newHTML": "<div>new html</div>"}}\n4. addElement: {"function": "addElement", "arguments": {"parentSelector": ".parent", "newHTML": "<div>content</div>", "position": "beforeend"}}\n5. updateStyle: {"function": "updateStyle", "arguments": {"selector": ".class-name", "styleObj": {"color": "#000000"}}}\n6. executeJS: {"function": "executeJS", "arguments": {"code": "console.log('hello');"}}\n\nUse DOS/retro aesthetic with flat colors: #000000 (black), #ffffff (white), #c0c0c0 (gray), #000080 (blue), #ff0000 (red). Use monospace fonts.`,
                                     },
                                 ],
                             }),
@@ -464,6 +479,9 @@
                                 console.log('Tool call result:', result);
                             }
                             statusDiv.textContent = `EXECUTED ${results.length} COMMANDS`;
+                            
+                            // Send feedback to AI about tool results
+                            setTimeout(() => sendToolFeedback(userPrompt, results), 100);
                         } else {
                             throw new Error("Invalid tool call format");
                         }
@@ -497,6 +515,100 @@
             function clearEditor() {
                 document.getElementById("codeEditor").value = "";
                 document.getElementById("statusDisplay").textContent = "";
+            }
+
+            async function sendToolFeedback(originalPrompt, toolResults) {
+                const statusDiv = document.getElementById("statusDisplay");
+                
+                try {
+                    statusDiv.textContent = "SENDING FEEDBACK TO AI...";
+                    
+                    const currentPageHTML = document.documentElement.outerHTML;
+                    const resultsText = toolResults.map(r => 
+                        `${r.success ? '✓' : '✗'} ${r.message}${r.result ? ` (result: ${r.result})` : ''}`
+                    ).join('\n');
+
+                    const response = await fetch(
+                        "https://ai.hackclub.com/chat/completions",
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                                messages: [
+                                    {
+                                        role: "user",
+                                        content: `Previous request: "${originalPrompt}"\n\nTool execution results:\n${resultsText}\n\nCurrent page state:\n${currentPageHTML}\n\nBased on the tool results, do you need to make any follow-up modifications? If everything looks good, respond with "COMPLETE". If you need to make adjustments, respond with tool calls or HTML.\n\nIMPORTANT: Respond with ONLY one of these formats:\n- "COMPLETE" (if satisfied)\n- {"tool_calls": [...]} (for modifications)\n- Raw HTML (to append content)\n\nDO NOT include explanatory text.`,
+                                    },
+                                ],
+                            }),
+                        },
+                    );
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+                    let followUpContent;
+                    
+                    if (data.choices && data.choices[0] && data.choices[0].message) {
+                        followUpContent = data.choices[0].message.content;
+                    } else if (data.content) {
+                        followUpContent = data.content;
+                    } else if (data.response) {
+                        followUpContent = data.response;
+                    } else {
+                        throw new Error("Unexpected API response format");
+                    }
+
+                    followUpContent = followUpContent.trim();
+                    console.log('Follow-up response:', followUpContent);
+
+                    if (followUpContent === "COMPLETE") {
+                        statusDiv.textContent = "AI SATISFIED - TASK COMPLETE";
+                        setTimeout(() => statusDiv.textContent = "", 3000);
+                        return;
+                    }
+
+                    // Process follow-up commands
+                    statusDiv.textContent = "AI MAKING ADJUSTMENTS...";
+                    
+                    // Try to parse as tool calls
+                    try {
+                        const jsonMatch = followUpContent.match(/\{[\s\S]*"tool_calls"[\s\S]*\}/);
+                        if (jsonMatch) {
+                            const toolResponse = JSON.parse(jsonMatch[0]);
+                            if (toolResponse.tool_calls && Array.isArray(toolResponse.tool_calls)) {
+                                const followUpResults = [];
+                                for (const toolCall of toolResponse.tool_calls) {
+                                    const result = executeToolCall(toolCall);
+                                    followUpResults.push(result);
+                                    console.log('Follow-up tool result:', result);
+                                }
+                                statusDiv.textContent = `AI EXECUTED ${followUpResults.length} ADJUSTMENTS`;
+                            }
+                        } else {
+                            // Treat as HTML
+                            let cleanCode = followUpContent
+                                .replace(/```html\n?/g, "")
+                                .replace(/```\n?/g, "");
+                            document.querySelector(".content").innerHTML += cleanCode;
+                            statusDiv.textContent = "AI ADDED FOLLOW-UP CONTENT";
+                        }
+                    } catch (error) {
+                        console.log('Follow-up parsing error:', error);
+                        statusDiv.textContent = "AI FEEDBACK ERROR";
+                    }
+
+                    setTimeout(() => statusDiv.textContent = "", 4000);
+
+                } catch (error) {
+                    statusDiv.textContent = `FEEDBACK ERROR: ${error.message}`;
+                    console.error('Feedback error:', error);
+                    setTimeout(() => statusDiv.textContent = "", 3000);
+                }
             }
 
             // Handle Ctrl+Enter in textarea
