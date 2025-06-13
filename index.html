@@ -494,9 +494,16 @@
 
                     console.log("Cleaned response:", cleanResponse);
 
+                    // For safety, preprocess JavaScript code in JSON to escape problematic characters
+                    cleanResponse = cleanResponse.replace(/"code"\s*:\s*(`|")([^`"]*?)(`|")/g, function(match, q1, code, q3) {
+                        // Replace all literal backslashes with double backslashes in the code string
+                        const escapedCode = code.replace(/\\/g, "\\\\");
+                        return `"code":${q1}${escapedCode}${q3}`;
+                    });
+
                     // Check if response contains tool calls
                     try {
-                        const toolResponse = JSON.parse(cleanResponse);
+                        const toolResponse = safeJsonParse(cleanResponse);
                         if (
                             toolResponse.tool_calls &&
                             Array.isArray(toolResponse.tool_calls)
@@ -609,7 +616,10 @@
                     followUpContent = followUpContent.trim();
                     console.log("Follow-up response:", followUpContent);
 
-                    if (followUpContent === "COMPLETE") {
+                    if (
+                        followUpContent === "COMPLETE" ||
+                        followUpContent === '"COMPLETE"'
+                    ) {
                         statusDiv.textContent = "AI SATISFIED - TASK COMPLETE";
                         setTimeout(() => (statusDiv.textContent = ""), 3000);
                         return;
@@ -624,7 +634,14 @@
                             /\{[\s\S]*"tool_calls"[\s\S]*\}/,
                         );
                         if (jsonMatch) {
-                            const toolResponse = JSON.parse(jsonMatch[0]);
+                            // Preprocess JavaScript code in JSON to escape problematic characters
+                            let cleanJson = jsonMatch[0].replace(/"code"\s*:\s*(`|")([^`"]*?)(`|")/g, function(match, q1, code, q3) {
+                                // Replace all literal backslashes with double backslashes in the code string
+                                const escapedCode = code.replace(/\\/g, "\\\\");
+                                return `"code":${q1}${escapedCode}${q3}`;
+                            });
+                            
+                            const toolResponse = safeJsonParse(cleanJson);
                             if (
                                 toolResponse.tool_calls &&
                                 Array.isArray(toolResponse.tool_calls)
@@ -663,17 +680,55 @@
                 }
             }
 
-            // Handle Ctrl+Enter in textarea
-            document.addEventListener("DOMContentLoaded", function () {
-                document
-                    .getElementById("codeEditor")
-                    .addEventListener("keydown", function (e) {
-                        if (e.ctrlKey && e.key === "Enter") {
-                            e.preventDefault();
-                            generateAndExecute();
-                        }
+            // Debug helper for JSON parsing issues
+            function safeJsonParse(jsonString) {
+                try {
+                    return JSON.parse(jsonString);
+                } catch (error) {
+                    console.error("JSON parse error:", error);
+                    console.error("Problem JSON:", jsonString);
+                    // Try to escape any unescaped control characters
+                    const escapedJson = jsonString.replace(/[\u0000-\u001F]/g, match => {
+                        return '\\u' + ('0000' + match.charCodeAt(0).toString(16)).slice(-4);
                     });
-            });
+                    try {
+                        return JSON.parse(escapedJson);
+                    } catch (secondError) {
+                        console.error("Second parse attempt failed:", secondError);
+                        throw error; // Throw the original error
+                    }
+                }
+            }
+            
+            // Handle Ctrl+Enter in textarea
+            function setupCtrlEnterHandler() {
+                const codeEditor = document.getElementById("codeEditor");
+                if (codeEditor) {
+                    // Remove any previous event listeners first (to avoid duplicates)
+                    codeEditor.removeEventListener("keydown", ctrlEnterHandler);
+                    // Add a new event listener
+                    codeEditor.addEventListener("keydown", ctrlEnterHandler);
+                } else {
+                    console.error("codeEditor element not found, will retry");
+                    // Retry after a short delay
+                    setTimeout(setupCtrlEnterHandler, 100);
+                }
+            }
+            
+            // Define the handler function separately so it can be added/removed consistently
+            function ctrlEnterHandler(e) {
+                if (e.ctrlKey && e.key === "Enter") {
+                    e.preventDefault();
+                    generateAndExecute();
+                }
+            }
+            
+            // Set up the handler immediately
+            setupCtrlEnterHandler();
+            
+            // Also ensure it's set up when the DOM is fully loaded
+            window.addEventListener("DOMContentLoaded", setupCtrlEnterHandler);
+            window.addEventListener("load", setupCtrlEnterHandler);
 
             // Update time in status bar
             setInterval(() => {
