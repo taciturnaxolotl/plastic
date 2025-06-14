@@ -179,12 +179,269 @@
                 white-space: pre;
                 margin: 10px 0;
             }
+
+            /* Modal styles */
+            .modal {
+                display: none;
+                position: fixed;
+                z-index: 9999;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.7);
+                overflow: auto;
+                opacity: 1;
+                transition: opacity 0.2s ease-in-out;
+            }
+
+            .modal-content {
+                background-color: #ffffff;
+                border: 2px solid #808080;
+                box-shadow:
+                    inset -2px -2px #c0c0c0,
+                    inset 2px 2px #404040,
+                    0 0 10px rgba(0, 0, 0, 0.5);
+                margin: 10% auto;
+                width: 80%;
+                max-width: 600px;
+                animation: fadeIn 0.2s ease-in-out;
+                position: relative; /* Ensure proper positioning of close button */
+            }
+
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(-20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .modal-body {
+                padding: 15px;
+                max-height: 70vh;
+                overflow-y: auto;
+            }
+
+            .input-group {
+                margin: 10px 0;
+            }
+
+            .input-group label {
+                display: inline-block;
+                width: 80px;
+            }
+
+            .input-group input {
+                font-family: "Courier Prime", "Courier New", monospace;
+                padding: 5px;
+                background: #ffffff;
+                border: 2px inset #c0c0c0;
+            }
+
+            .save-list {
+                max-height: 200px;
+                overflow-y: auto;
+                border: 1px solid #c0c0c0;
+                margin: 10px 0;
+                padding: 5px;
+            }
+
+            .save-item {
+                display: flex;
+                justify-content: space-between;
+                margin: 5px 0;
+                padding: 8px;
+                border-bottom: 1px solid #c0c0c0;
+                background-color: #f0f0f0;
+            }
+
+            .hotkey {
+                cursor: pointer;
+                padding: 2px 5px;
+                margin: 0 2px;
+                border: 1px solid #c0c0c0;
+                border-radius: 3px;
+            }
+
+            .hotkey:hover {
+                background-color: #c0c0c0;
+            }
+
+            .modal-close {
+                position: absolute;
+                right: 10px;
+                top: 2px;
+                cursor: pointer;
+                font-size: 16px;
+                font-weight: bold;
+                color: #000000;
+                background: #d0d0d0;
+                border: 1px solid #808080;
+                border-radius: 3px;
+                width: 20px;
+                height: 20px;
+                text-align: center;
+                line-height: 18px;
+                box-shadow:
+                    inset -1px -1px #404040,
+                    inset 1px 1px #ffffff;
+            }
+
+            .modal-close:hover {
+                background-color: #c0c0c0;
+                color: #ff0000;
+            }
+
+            .modal-close:active {
+                box-shadow:
+                    inset 1px 1px #404040,
+                    inset -1px -1px #ffffff;
+            }
         </style>
     </head>
     <body>
+        <!-- Help Modal -->
+        <div id="help-modal" class="modal">
+            <div class="modal-content">
+                <div class="title-bar">
+                    PLASTIC.EXE - Help
+                    <span
+                        class="modal-close"
+                        onclick="hideModal('help-modal')"
+                        tabindex="0"
+                        role="button"
+                        aria-label="Close help modal"
+                        >✕</span
+                    >
+                </div>
+                <div class="modal-body">
+                    <h2>Keyboard Shortcuts:</h2>
+                    <ul>
+                        <li><strong>F1</strong>: Show this help screen</li>
+                        <li>
+                            <strong>F2</strong>: Save the current page state
+                        </li>
+                        <li><strong>F3</strong>: Load a saved page state</li>
+                        <li><strong>Esc</strong>: Close modals</li>
+                        <li>
+                            <strong>Ctrl+Enter</strong>: Execute code in the
+                            editor
+                        </li>
+                    </ul>
+
+                    <h2>How to Use PLASTIC:</h2>
+                    <ol>
+                        <li>
+                            Type a description of what you want to change in the
+                            editor
+                        </li>
+                        <li>
+                            Press Ctrl+Enter or click the "GENERATE & EXECUTE"
+                            button
+                        </li>
+                        <li>
+                            PLASTIC will modify itself according to your
+                            description
+                        </li>
+                        <li>Use F2 to save your modified system</li>
+                        <li>Use F3 to load a previously saved state</li>
+                    </ol>
+
+                    <h2>About PLASTIC:</h2>
+                    <p>
+                        PLASTIC.EXE is a self-modifying system that lets you
+                        transform its interface and functionality through
+                        natural language commands.
+                    </p>
+                </div>
+                <div style="text-align: center; margin-top: 15px">
+                    <div class="button" onclick="hideModal('help-modal')">
+                        CLOSE
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save Modal -->
+        <div id="save-modal" class="modal">
+            <div class="modal-content">
+                <div class="title-bar">
+                    PLASTIC.EXE - Save
+                    <span
+                        class="modal-close"
+                        onclick="hideModal('save-modal')"
+                        tabindex="0"
+                        role="button"
+                        aria-label="Close save modal"
+                        >✕</span
+                    >
+                </div>
+                <div class="modal-body">
+                    <h2>Save Current State</h2>
+                    <div class="input-group">
+                        <label for="save-name">Name:</label>
+                        <input
+                            type="text"
+                            id="save-name"
+                            placeholder="Enter save name"
+                        />
+                    </div>
+                    <div
+                        style="
+                            display: flex;
+                            justify-content: center;
+                            gap: 10px;
+                            margin-top: 15px;
+                        "
+                    >
+                        <div class="button" onclick="saveCurrentHTML()">
+                            SAVE
+                        </div>
+                        <div class="button" onclick="hideModal('save-modal')">
+                            CANCEL
+                        </div>
+                    </div>
+                    <div id="save-message"></div>
+
+                    <h2>Saved States</h2>
+                    <div id="saved-list" class="save-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Load Modal -->
+        <div id="load-modal" class="modal">
+            <div class="modal-content">
+                <div class="title-bar">
+                    PLASTIC.EXE - Load
+                    <span
+                        class="modal-close"
+                        onclick="hideModal('load-modal')"
+                        tabindex="0"
+                        role="button"
+                        aria-label="Close load modal"
+                        >✕</span
+                    >
+                </div>
+                <div class="modal-body">
+                    <h2>Load Saved State</h2>
+                    <div id="load-list" class="save-list"></div>
+                    <div id="load-message"></div>
+                    <div style="text-align: center; margin-top: 15px">
+                        <div class="button" onclick="hideModal('load-modal')">
+                            CANCEL
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="terminal">
             <div class="title-bar">
-                C:\PLASTIC.EXE - [Self-Modifying System v2.1]
+                C:\PLASTIC.EXE - [Self-Modifying System v3.0]
             </div>
 
             <div class="content">
@@ -200,7 +457,7 @@
                 >
 
                 <h2>System Information:</h2>
-                <p>PLASTIC v2.1 - Self-Modifying Code System</p>
+                <p>PLASTIC v3.0 - Self-Modifying Code System</p>
                 <p>Copyright (C) 1995 DUNKIRK Corp.</p>
                 <p>
                     All rights reserved. Licensed to: REGISTERED USER under MIT
@@ -257,8 +514,17 @@
             </div>
 
             <div class="status-bar">
-                <span>F1=Help F2=Save F3=Load F10=Menu</span>
-                <span>12:00</span>
+                <span
+                    ><span class="hotkey" onclick="showHelp()">F1=Help</span>
+                    <span class="hotkey" onclick="showSaveModal()"
+                        >F2=Save</span
+                    >
+                    <span class="hotkey" onclick="showLoadModal()"
+                        >F3=Load</span
+                    >
+                    F10=Menu</span
+                >
+                <span id="time">12:00</span>
             </div>
         </div>
 
@@ -399,7 +665,6 @@
                                 args.position,
                             );
                         } else {
-                            // Fallback: use all argument values in order
                             return window.toolCallbacks[func](
                                 ...Object.values(args),
                             );
@@ -495,11 +760,14 @@
                     console.log("Cleaned response:", cleanResponse);
 
                     // For safety, preprocess JavaScript code in JSON to escape problematic characters
-                    cleanResponse = cleanResponse.replace(/"code"\s*:\s*(`|")([^`"]*?)(`|")/g, function(match, q1, code, q3) {
-                        // Replace all literal backslashes with double backslashes in the code string
-                        const escapedCode = code.replace(/\\/g, "\\\\");
-                        return `"code":${q1}${escapedCode}${q3}`;
-                    });
+                    cleanResponse = cleanResponse.replace(
+                        /"code"\s*:\s*(`|")([^`"]*?)(`|")/g,
+                        function (match, q1, code, q3) {
+                            // Replace all literal backslashes with double backslashes in the code string
+                            const escapedCode = code.replace(/\\/g, "\\\\");
+                            return `"code":${q1}${escapedCode}${q3}`;
+                        },
+                    );
 
                     // Check if response contains tool calls
                     try {
@@ -635,12 +903,18 @@
                         );
                         if (jsonMatch) {
                             // Preprocess JavaScript code in JSON to escape problematic characters
-                            let cleanJson = jsonMatch[0].replace(/"code"\s*:\s*(`|")([^`"]*?)(`|")/g, function(match, q1, code, q3) {
-                                // Replace all literal backslashes with double backslashes in the code string
-                                const escapedCode = code.replace(/\\/g, "\\\\");
-                                return `"code":${q1}${escapedCode}${q3}`;
-                            });
-                            
+                            let cleanJson = jsonMatch[0].replace(
+                                /"code"\s*:\s*(`|")([^`"]*?)(`|")/g,
+                                function (match, q1, code, q3) {
+                                    // Replace all literal backslashes with double backslashes in the code string
+                                    const escapedCode = code.replace(
+                                        /\\/g,
+                                        "\\\\",
+                                    );
+                                    return `"code":${q1}${escapedCode}${q3}`;
+                                },
+                            );
+
                             const toolResponse = safeJsonParse(cleanJson);
                             if (
                                 toolResponse.tool_calls &&
@@ -688,96 +962,432 @@
                     console.error("JSON parse error:", error);
                     console.error("Problem JSON:", jsonString);
                     // Try to escape any unescaped control characters
-                    const escapedJson = jsonString.replace(/[\u0000-\u001F]/g, match => {
-                        return '\\u' + ('0000' + match.charCodeAt(0).toString(16)).slice(-4);
-                    });
+                    const escapedJson = jsonString.replace(
+                        /[\u0000-\u001F]/g,
+                        (match) => {
+                            return (
+                                "\\u" +
+                                (
+                                    "0000" + match.charCodeAt(0).toString(16)
+                                ).slice(-4)
+                            );
+                        },
+                    );
                     try {
                         return JSON.parse(escapedJson);
                     } catch (secondError) {
-                        console.error("Second parse attempt failed:", secondError);
+                        console.error(
+                            "Second parse attempt failed:",
+                            secondError,
+                        );
                         throw error; // Throw the original error
                     }
                 }
             }
-            
-            // Handle Ctrl+Enter in textarea
-            function setupCtrlEnterHandler() {
+
+            function deleteSave(key) {
+                if (confirm("Are you sure you want to delete this save?")) {
+                    localStorage.removeItem(key);
+                    // Refresh the load modal to show updated list
+                    showLoadModal();
+                }
+            }
+
+            // Handle keyboard shortcuts
+            function setupKeyboardHandlers() {
                 const codeEditor = document.getElementById("codeEditor");
                 if (codeEditor) {
                     // Remove any previous event listeners first (to avoid duplicates)
-                    codeEditor.removeEventListener("keydown", ctrlEnterHandler);
+                    codeEditor.removeEventListener("keydown", editorKeyHandler);
                     // Add a new event listener
-                    codeEditor.addEventListener("keydown", ctrlEnterHandler);
+                    codeEditor.addEventListener("keydown", editorKeyHandler);
                 } else {
                     console.error("codeEditor element not found, will retry");
                     // Retry after a short delay
-                    setTimeout(setupCtrlEnterHandler, 100);
+                    setTimeout(setupKeyboardHandlers, 100);
                 }
+
+                // Global keyboard shortcuts
+                document.addEventListener("keydown", function (e) {
+                    // F1 key - Help
+                    if (e.key === "F1") {
+                        e.preventDefault();
+                        showHelp();
+                    }
+                    // F2 key - Save
+                    else if (e.key === "F2") {
+                        e.preventDefault();
+                        showSaveModal();
+                    }
+                    // F3 key - Load
+                    else if (e.key === "F3") {
+                        e.preventDefault();
+                        showLoadModal();
+                    }
+                    // Escape key - Close any open modal
+                    else if (e.key === "Escape") {
+                        document.querySelectorAll(".modal").forEach((modal) => {
+                            if (modal.style.display === "block") {
+                                hideModal(modal.id);
+                                // Return focus to the editor after closing modal
+                                const editor =
+                                    document.getElementById("codeEditor");
+                                if (editor) {
+                                    editor.focus();
+                                }
+                            }
+                        });
+                    }
+                });
             }
-            
-            // Define the handler function separately so it can be added/removed consistently
-            function ctrlEnterHandler(e) {
+
+            // Define the editor key handler function
+            function editorKeyHandler(e) {
                 if (e.ctrlKey && e.key === "Enter") {
                     e.preventDefault();
                     generateAndExecute();
                 }
             }
-            
-            // Set up the handler immediately
-            setupCtrlEnterHandler();
-            
-            // Also ensure it's set up when the DOM is fully loaded
-            window.addEventListener("DOMContentLoaded", setupCtrlEnterHandler);
-            window.addEventListener("load", setupCtrlEnterHandler);
 
-            // Update time in status bar
-            setInterval(() => {
-                const now = new Date();
-                const timeStr = now.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: false,
-                });
-                const statusBarTime = document.querySelector(
-                    ".status-bar span:last-child",
-                );
-                if (statusBarTime) {
-                    statusBarTime.textContent = timeStr;
+            // Set up the handlers immediately
+            setupKeyboardHandlers();
+
+            // Also ensure they're set up when the DOM is fully loaded
+            // Modal functions
+            function showModal(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.style.display = "block";
+                    // Prevent body scrolling when modal is open
+                    document.body.style.overflow = "hidden";
+
+                    // Make the modal appear with a nice fade-in effect
+                    modal.style.opacity = "0";
+                    setTimeout(() => {
+                        modal.style.opacity = "1";
+                    }, 10);
+
+                    // Add/refresh click handler for closing when clicking outside
+                    const outsideClickHandler = function (e) {
+                        if (e.target === modal) {
+                            hideModal(modalId);
+                        }
+                    };
+                    // Remove any existing handlers to avoid duplicates
+                    modal.removeEventListener("click", outsideClickHandler);
+                    modal.addEventListener("click", outsideClickHandler);
+
+                    // Trap focus within the modal
+                    const focusableElements = modal.querySelectorAll(
+                        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), .modal-close, .button',
+                    );
+                    if (focusableElements.length > 0) {
+                        const firstElement = focusableElements[0];
+                        const lastElement =
+                            focusableElements[focusableElements.length - 1];
+
+                        // Focus the first element
+                        setTimeout(() => {
+                            firstElement.focus();
+                        }, 100);
+
+                        // Add key event handler for tab key to trap focus
+                        const handleTabKey = function (e) {
+                            if (e.key === "Tab") {
+                                if (
+                                    e.shiftKey &&
+                                    document.activeElement === firstElement
+                                ) {
+                                    e.preventDefault();
+                                    lastElement.focus();
+                                } else if (
+                                    !e.shiftKey &&
+                                    document.activeElement === lastElement
+                                ) {
+                                    e.preventDefault();
+                                    firstElement.focus();
+                                }
+                            }
+                        };
+
+                        // Remove any existing handler first
+                        modal.removeEventListener("keydown", handleTabKey);
+                        modal.addEventListener("keydown", handleTabKey);
+
+                        // Store the handler on the modal object for later cleanup
+                        modal._tabHandler = handleTabKey;
+                    }
+                }
+            }
+
+            function hideModal(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    // Fade out effect
+                    modal.style.opacity = "0";
+
+                    // Hide the modal after animation
+                    setTimeout(() => {
+                        modal.style.display = "none";
+                        // Restore body scrolling when modal is closed
+                        document.body.style.overflow = "auto";
+                    }, 200);
+
+                    // Return focus to editor when modal is closed
+                    const editor = document.getElementById("codeEditor");
+                    if (editor) {
+                        editor.focus();
+                    }
+
+                    // Clear any error messages
+                    const messageElements = document.querySelectorAll(
+                        "#save-message, #load-message",
+                    );
+                    messageElements.forEach((el) => {
+                        if (el) el.textContent = "";
+                    });
+                }
+            }
+
+            function showHelp() {
+                showModal("help-modal");
+            }
+
+            function showSaveModal() {
+                document.getElementById("save-name").value = "";
+                showModal("save-modal");
+                // Focus the input field and select any existing text
+                setTimeout(() => {
+                    const saveNameInput = document.getElementById("save-name");
+                    saveNameInput.focus();
+                    saveNameInput.select();
+                }, 100);
+            }
+
+            function showLoadModal() {
+                // Populate the load list
+                const loadList = document.getElementById("load-list");
+                loadList.innerHTML = "";
+
+                // Get all keys in localStorage that start with 'plastic-save-'
+                const saves = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith("plastic-save-")) {
+                        const saveName = key.replace("plastic-save-", "");
+                        let timestamp = null;
+
+                        // Try to extract timestamp if it's a JSON object
+                        try {
+                            const saveData = JSON.parse(
+                                localStorage.getItem(key),
+                            );
+                            timestamp = saveData.timestamp;
+                        } catch (e) {
+                            // Old format, no timestamp available
+                        }
+
+                        saves.push({
+                            key,
+                            name: saveName,
+                            timestamp: timestamp,
+                        });
+                    }
                 }
 
-                // Update memory in status bar based on actual tab memory usage
-                const memoryUsage = Math.round(
-                    performance.memory
-                        ? performance.memory.usedJSHeapSize / 1024
-                        : 0,
-                );
+                if (saves.length === 0) {
+                    loadList.innerHTML =
+                        '<div class="save-item">No saves found</div>';
+                } else {
+                    // Sort saves by timestamp (newest first) or alphabetically if no timestamp
+                    saves.sort((a, b) => {
+                        if (a.timestamp && b.timestamp) {
+                            return b.timestamp - a.timestamp; // Newest first
+                        } else if (a.timestamp) {
+                            return -1; // a comes first
+                        } else if (b.timestamp) {
+                            return 1; // b comes first
+                        } else {
+                            return a.name.localeCompare(b.name); // Alphabetically
+                        }
+                    });
 
-                const memoryStr = `${589 - Math.min(Math.round(memoryUsage / 1024), 500)}K free`;
-                const memory = document.getElementById("memory");
-                if (memory) {
-                    memory.textContent = memoryStr;
+                    saves.forEach((save) => {
+                        const saveItem = document.createElement("div");
+                        saveItem.className = "save-item";
+
+                        // Format timestamp if available
+                        let dateStr = "";
+                        if (save.timestamp) {
+                            const date = new Date(save.timestamp);
+                            dateStr = ` <span style="font-size: 12px; color: #808080;">(${date.toLocaleString()})</span>`;
+                        }
+
+                        saveItem.innerHTML = `
+                                        <span>${save.name}${dateStr}</span>
+                                        <div>
+                                            <span class="hotkey" onclick="loadSave('${save.key}')" tabindex="0" role="button" aria-label="Load save ${save.name}">Load</span>
+                                            <span class="separator">|</span>
+                                            <span class="hotkey" onclick="deleteSave('${save.key}')" tabindex="0" role="button" aria-label="Delete save ${save.name}">Delete</span>
+                                        </div>
+                                    `;
+                        // Add double-click support to load the save directly
+                        saveItem.addEventListener("dblclick", () =>
+                            loadSave(save.key),
+                        );
+                        loadList.appendChild(saveItem);
+                    });
                 }
 
-                // Update runtime in status bar - based on how long the page has been open
-                const pageOpenTime = performance.timing
-                    ? performance.timing.navigationStart || Date.now()
-                    : Date.now();
-                const timeOpen = Math.floor((Date.now() - pageOpenTime) / 1000);
-                const hours = Math.floor(timeOpen / 3600)
-                    .toString()
-                    .padStart(2, "0");
-                const minutes = Math.floor((timeOpen % 3600) / 60)
-                    .toString()
-                    .padStart(2, "0");
-                const seconds = Math.floor(timeOpen % 60)
-                    .toString()
-                    .padStart(2, "0");
-                const runtimeStr = `${hours}:${minutes}:${seconds}`;
-                const runtime = document.getElementById("runtime");
-                if (runtime) {
-                    runtime.textContent = runtimeStr;
+                showModal("load-modal");
+            }
+
+            function saveCurrentHTML() {
+                const saveName = document
+                    .getElementById("save-name")
+                    .value.trim();
+                if (!saveName) {
+                    const saveMessage = document.getElementById("save-message");
+                    saveMessage.textContent =
+                        "Please enter a name for your save";
+                    saveMessage.style.color = "#ff0000";
+                    setTimeout(() => {
+                        saveMessage.textContent = "";
+                    }, 3000);
+                    return;
                 }
-            }, 1000);
+
+                try {
+                    // Ensure all modals are closed in the saved HTML
+                    // First make a clone of the current document state
+                    const tempDiv = document.createElement("div");
+                    tempDiv.innerHTML = document.documentElement.outerHTML;
+
+                    // Find and hide all modals in the clone
+                    const modalElements = tempDiv.querySelectorAll(".modal");
+                    modalElements.forEach((modal) => {
+                        modal.style.display = "none";
+                    });
+
+                    // Save the current state
+                    const saveData = {
+                        html: tempDiv.innerHTML,
+                        timestamp: new Date().getTime(),
+                        name: saveName,
+                    };
+
+                    localStorage.setItem(
+                        `plastic-save-${saveName}`,
+                        JSON.stringify(saveData),
+                    );
+
+                    const saveMessage = document.getElementById("save-message");
+                    saveMessage.textContent = `Saved as "${saveName}"`;
+                    saveMessage.style.color = "#008000";
+                    setTimeout(() => {
+                        saveMessage.textContent = "";
+                        hideModal("save-modal");
+                    }, 1500);
+                } catch (e) {
+                    const saveMessage = document.getElementById("save-message");
+                    saveMessage.textContent = `Error saving: ${e.message}`;
+                    saveMessage.style.color = "#ff0000";
+                    setTimeout(() => {
+                        saveMessage.textContent = "";
+                    }, 3000);
+                }
+            }
+
+            // Add keyboard support for modals
+            document.addEventListener("DOMContentLoaded", function () {
+                const saveNameInput = document.getElementById("save-name");
+                if (saveNameInput) {
+                    // Remove any existing listeners to prevent duplicates
+                    const saveInputHandler = function (e) {
+                        if (e.key === "Enter") {
+                            e.preventDefault();
+                            saveCurrentHTML();
+                        }
+                    };
+
+                    saveNameInput.removeEventListener(
+                        "keydown",
+                        saveInputHandler,
+                    );
+                    saveNameInput.addEventListener("keydown", saveInputHandler);
+                }
+
+                document
+                    .querySelectorAll(".modal-close")
+                    .forEach((closeBtn) => {
+                        closeBtn.addEventListener("keydown", function (e) {
+                            if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                const modalId = this.closest(".modal").id;
+                                hideModal(modalId);
+                            }
+                        });
+                    });
+            });
+
+            function loadSave(key) {
+                try {
+                    const savedData = localStorage.getItem(key);
+                    if (savedData) {
+                        let saveObj;
+
+                        try {
+                            saveObj = JSON.parse(savedData);
+                        } catch (e) {
+                            saveObj = { html: savedData };
+                        }
+
+                        if (
+                            confirm(
+                                "Loading will replace the current page. Continue?",
+                            )
+                        ) {
+                            hideModal("load-modal");
+
+                            const scriptToAdd = `
+                                            <script>
+                                                document.addEventListener('DOMContentLoaded', function() {
+                                                    // Ensure all modals are hidden
+                                                    document.querySelectorAll('.modal').forEach(modal => {
+                                                        modal.style.display = "none";
+                                                    });
+
+                                                    // Re-setup keyboard handlers
+                                                    if (typeof setupKeyboardHandlers === 'function') {
+                                                        setupKeyboardHandlers();
+                                                    }
+                                                });
+                                            <\/script>
+                                        `;
+
+                            // Load the saved HTML with the added script
+                            document.open();
+                            document.write(saveObj.html + scriptToAdd);
+                            document.close();
+                        }
+                    } else {
+                        const loadMessage =
+                            document.getElementById("load-message");
+                        loadMessage.textContent = "Save not found";
+                        loadMessage.style.color = "#ff0000";
+                        setTimeout(() => {
+                            loadMessage.textContent = "";
+                        }, 3000);
+                    }
+                } catch (e) {
+                    const loadMessage = document.getElementById("load-message");
+                    loadMessage.textContent = `Error loading: ${e.message}`;
+                    loadMessage.style.color = "#ff0000";
+                    setTimeout(() => {
+                        loadMessage.textContent = "";
+                    }, 3000);
+                }
+            }
         </script>
     </body>
 </html>
