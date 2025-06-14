@@ -1,6 +1,8 @@
 # Plastic
 
-The self modifying plastic website
+The self modifying plastic website! It's hosted on cloudflare pages and runs in a single `index.html` :)
+
+![a screenshot of the website](https://hc-cdn.hel1.your-objectstorage.com/s/v3/a0cd9437bae340aa75d1ca4061c68a3117c114a4_image.png)
 
 <p align="center">
 	<img src="https://raw.githubusercontent.com/taciturnaxolotl/carriage/master/.github/images/line-break.svg" />
